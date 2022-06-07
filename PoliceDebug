@@ -1,0 +1,299 @@
+﻿.h
+// Debug Params
+	UPROPERTY(Category = "Debug", EditAnywhere, BlueprintReadOnly,
+		meta=(AllowPrivateAccess = "true"))
+	bool bDebugMovement = false;
+	// Debug Params
+	UPROPERTY(Category = "Debug|Move", EditAnywhere, BlueprintReadOnly,
+		meta=(AllowPrivateAccess = "true"))
+	bool bMoveLeft = false;
+	// Debug Params
+	UPROPERTY(Category = "Debug|Move", EditAnywhere, BlueprintReadOnly,
+		meta=(AllowPrivateAccess = "true"))
+	bool bMoveRight = false;
+	// Debug Params
+	UPROPERTY(Category = "Debug|Move", EditAnywhere, BlueprintReadOnly,
+		meta=(AllowPrivateAccess = "true"))
+	bool bMoveDown = false;
+	// Debug Params
+	UPROPERTY(Category = "Debug|Move", EditAnywhere, BlueprintReadOnly,
+		meta=(AllowPrivateAccess = "true"))
+	bool bMoveUp = false;
+	// Debug Params
+	UPROPERTY(Category = "Debug|Move", EditAnywhere, BlueprintReadOnly,
+		meta=(AllowPrivateAccess = "true"))
+	bool bStop = false;
+	// Debug Params
+	UPROPERTY(Category = "Debug|Move|Switch", VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
+	bool bMovingLeft = false;
+	// Debug Params
+	UPROPERTY(Category = "Debug|Move|Switch", VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
+	bool bMovingRight = false;
+	// Debug Params
+	UPROPERTY(Category = "Debug|Move|Switch", VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
+	bool bMovingUp = false;
+	// Debug Params
+	UPROPERTY(Category = "Debug|Move|Switch", VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
+	bool bMovingDown = false;
+	
+	
+	//Debug Function
+    	void DebugCheckWalls();
+    	//Debug Function
+    	auto DebugCheckRight() const -> bool;
+    	//Debug Function
+    	auto DebugCheckLeft() const -> bool;
+    	//Debug Function
+    	auto DebugCheckUp() const -> bool;
+    	//Debug Function
+    	auto DebugCheckDown() const -> bool;
+    	//Debug Function
+    	void DebugMoveSwitch();
+    	//Debug Function
+    	void DebugMovement();
+    	//Debug Function
+    	void DebugStateMachine() const;
+    	//Debug Function
+    	void DebugRotateCharacter();
+.cpp
+// Debug
+void APolice::DebugMoveSwitch()
+{
+	if (bStop)
+	{
+		bMovingLeft = false;
+		bMovingRight = false;
+		bMovingUp = false;
+		bMovingDown = false;
+		bStop = false;
+	}
+	if (bMoveLeft)
+	{
+		bMovingLeft = true;
+		bMovingRight = false;
+		bMoveLeft = false;
+	}
+	if (bMoveRight)
+	{
+		bMovingLeft = false;
+		bMovingRight = true;
+		bMoveRight = false;
+	}
+	if (bMoveUp)
+	{
+		bMovingUp = true;
+		bMovingDown = false;
+		bMoveUp = false;
+	}
+	if (bMoveDown)
+	{
+		bMovingUp = false;
+		bMovingDown = true;
+		bMoveDown = false;
+	}
+}
+
+void APolice::DebugMovement()
+{
+	if (bMovingLeft)
+	{
+		const FVector CurrentActorLoc = GetActorLocation();
+		const FVector NewActorLoc = {CurrentActorLoc.X - 1, CurrentActorLoc.Y, CurrentActorLoc.Z};
+		SetActorLocation(NewActorLoc);
+	}
+	if (bMovingRight)
+	{
+		const FVector CurrentActorLoc = GetActorLocation();
+		const FVector NewActorLoc = {CurrentActorLoc.X + 1, CurrentActorLoc.Y, CurrentActorLoc.Z};
+		SetActorLocation(NewActorLoc);
+		
+	}
+	if (bMovingUp)
+	{
+		const FVector CurrentActorLoc = GetActorLocation();
+		const FVector NewActorLoc = {CurrentActorLoc.X, CurrentActorLoc.Y, CurrentActorLoc.Z + 1};
+		SetActorLocation(NewActorLoc);
+	}
+	if (bMovingDown)
+	{
+		const FVector CurrentActorLoc = GetActorLocation();
+		const FVector NewActorLoc = {CurrentActorLoc.X, CurrentActorLoc.Y, CurrentActorLoc.Z - 1};
+		SetActorLocation(NewActorLoc);
+	}
+}
+
+void APolice::DebugCheckWalls()
+{
+	if (DebugCheckLeft() || DebugCheckDown() || DebugCheckUp() || DebugCheckRight())
+	{
+		if (DebugCheckLeft())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Hit Left")); //For Debug
+			if (bMovingLeft)
+			{
+				bMovingLeft = false;
+			}
+		}
+		if (DebugCheckDown())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Hit Down")); //For Debug
+			if (bMovingDown)
+			{
+				bMovingDown = false;
+			}
+		}
+		if (DebugCheckUp())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Hit Up")); //For Debug
+			if (bMovingUp)
+			{
+				bMovingUp = false;
+			}
+		}
+		if (DebugCheckRight())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Hit Right")); //For Debug
+			if (bMovingRight)
+			{
+				bMovingRight = false;
+			}
+		}
+	}
+	else
+	{
+		// UE_LOG(LogTemp, Warning, TEXT("Not Hitting")); //For Debug
+	}
+}
+
+bool APolice::DebugCheckRight() const
+{
+	FCollisionQueryParams TraceParams;
+	FHitResult Hit;
+	FVector Loc = GetActorLocation();
+	FRotator Rot = {0, 0, 0};
+	const FVector Start = Loc;
+	FVector End = Start + (Rot.Vector() * TraceDistance);
+	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, TraceParams);
+	DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, LifeTime); //For Debug
+	if (bHit)
+	{
+		DrawDebugBox(GetWorld(), Hit.ImpactPoint, FVector(5,5,5),FColor::Red, false, LifeTime); //For Debug
+	}
+	return bHit;
+}
+
+bool APolice::DebugCheckDown() const
+{
+	FCollisionQueryParams TraceParams;
+	FHitResult Hit;
+	FVector Loc = GetActorLocation();
+	FRotator Rot = {-90, 0, 0};
+	const FVector Start = Loc;
+	FVector End = Start + (Rot.Vector() * TraceDistance);
+	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, TraceParams);
+	DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, LifeTime); //For Debug
+	if (bHit)
+	{
+		DrawDebugBox(GetWorld(), Hit.ImpactPoint, FVector(5,5,5),FColor::Red, false, LifeTime); //For Debug
+	}
+	return bHit;
+}
+
+bool APolice::DebugCheckUp() const
+{
+	FCollisionQueryParams TraceParams;
+	FHitResult Hit;
+	FVector Loc = GetActorLocation();
+	FRotator Rot = {90, 0, 0};
+	const FVector Start = Loc;
+	FVector End = Start + (Rot.Vector() * TraceDistance);
+	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, TraceParams);
+	DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, LifeTime); //For Debug
+	if (bHit)
+	{
+		DrawDebugBox(GetWorld(), Hit.ImpactPoint, FVector(5,5,5),FColor::Red, false, LifeTime); //For Debug
+	}
+	return bHit;
+}
+
+bool APolice::DebugCheckLeft() const
+{
+	FCollisionQueryParams TraceParams;
+	FHitResult Hit;
+	FVector Loc = GetActorLocation();
+	FRotator Rot = {-180, 0, 0};
+	const FVector Start = Loc;
+	FVector End = Start + (Rot.Vector() * TraceDistance);
+	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, TraceParams);
+	DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, LifeTime); //For Debug
+	if (bHit)
+	{
+		DrawDebugBox(GetWorld(), Hit.ImpactPoint, FVector(5,5,5),FColor::Red, false, LifeTime); //For Debug
+	}
+	return bHit;
+}
+
+// Debug Rotation, Animation
+void APolice::DebugStateMachine() const
+{
+	if (bMovingLeft || bMovingRight || bMovingDown || bMovingUp)
+	{
+		FlipbookComponent->SetFlipbook(MoveFlipbook);
+	}
+	else
+	{
+		FlipbookComponent->SetFlipbook(IdleFlipbook);
+	}
+}
+
+void APolice::DebugRotateCharacter()
+{
+	if (bMovingLeft)
+	{
+		SetActorRotation({90, 0, 0});
+	}
+	if (bMovingRight)
+	{
+		SetActorRotation({-90,0,0});
+	}
+	if (bMovingUp)
+	{
+		SetActorRotation({0, 0, 0});
+	}
+	if (bMovingDown)
+	{
+		SetActorRotation({-180, 0, 0});
+	}
+}
+
+
+if (bDebugMovement)
+	{
+		DebugCheckWalls();
+		//Debug Movement Switch
+		if (bMoveLeft || bMoveRight || bMoveUp || bMoveDown || bStop)
+		{
+			DebugMoveSwitch();
+		}
+		DebugMovement();
+		DebugStateMachine();
+		DebugRotateCharacter();
+	}
+	
+	
+	//Patrol AI Function
+	std::tuple<bool, bool, bool, bool> CheckObstacles() const;
+	
+	std::tuple<bool, bool, bool, bool> APolice::CheckObstacles() const
+    {
+    	bool bCheckLeft = CheckLeftObstacle();
+    	bool bCheckRight = CheckRightObstacle();
+    	bool bCheckUP = CheckUpObstacle();
+    	bool bCheckDown = CheckDownObstacle();
+    	return std::make_tuple(bCheckLeft, bCheckRight, bCheckUP, bCheckDown);
+    }
+    
+    	const bool Left = std::get<0>(Walls);
+    	const bool Right = std::get<1>(Walls);
+    	const bool UP = std::get<2>(Walls);
+    	const bool Down = std::get<3>(Walls);
